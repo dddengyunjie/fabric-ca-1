@@ -26,6 +26,8 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"github.com/Hyperledger-TWGC/tjfoc-gm/sm2"
+	x509GM "github.com/Hyperledger-TWGC/tjfoc-gm/x509"
 )
 
 // struct to hold info required for PKCS#8
@@ -452,8 +454,25 @@ func DERToPublicKey(raw []byte) (pub interface{}, err error) {
 	if len(raw) == 0 {
 		return nil, errors.New("Invalid DER. It must be different from nil.")
 	}
-
 	key, err := x509.ParsePKIXPublicKey(raw)
-
 	return key, err
+}
+
+// DERToPublicKey unmarshals a der to public key
+func DERToGMPublicKey(raw []byte) (pub interface{}, err error) {
+	if len(raw) == 0 {
+		return nil, errors.New("Invalid DER. It must be different from nil.")
+	}
+	key, err := x509GM.ParsePKIXPublicKey(raw)
+	if err != nil {
+		return nil, err
+	}
+
+	ecdsaPublicKey, ok := key.(*ecdsa.PublicKey)
+	if ok {
+		if ecdsaPublicKey.Curve == sm2.P256Sm2() {
+			key = &sm2.PublicKey{Curve: sm2.P256Sm2(), X: ecdsaPublicKey.X, Y: ecdsaPublicKey.Y}
+		}
+	}
+	return key, nil
 }
